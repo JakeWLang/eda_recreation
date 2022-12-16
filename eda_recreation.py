@@ -103,62 +103,14 @@ def gen_table_county_tract_acs(variables, states_of_interest, acs1_or5, c = c):
 
     return(geoid_frame)
 
-
-# Defines a function that applies 0s to state, country, and tract codes missing
-# (e.g. state 1 should be state 01, county 53 must be 053, etc.). Basically just
-# pads as necessary. This is a bastardization of rjust before I knew rjust existed
-def add_zero(entry, state_co_tract):
-    entry = str(entry)
-    if state_co_tract == 'state':
-        if (len(entry) == 1) & (entry[0] != '0'):
-            new_entry = '0' + entry
-            return(new_entry)
-        else:
-            return(entry)
-
-    elif state_co_tract == 'county':
-        if len(entry) == 1:
-            new_entry = '00' + entry
-            return(new_entry)
-        elif len(entry) == 2:
-            new_entry = '0' + entry
-            return(new_entry)
-        else:
-            return(entry)
-    elif state_co_tract == 'tract':
-        if len(entry) == 3:
-            new_entry = '000' + entry
-            return(new_entry)
-        elif len(entry) == 4:
-            new_entry = '00' + entry
-            return(new_entry)
-        elif len(entry) == 5:
-            new_entry = '0' + entry
-            return(new_entry)
-        else:
-            return(entry)
-    else:
-        return(entry)
-
-
-# Defines GEOID based on state county tract specification for spatial analysis
-# and linking
-def make_geoid(df):
-    df['GEOID'] = df['state'].astype(
-        str) + df['county'].astype(str) + df['tract'].astype(str)
-
-    return(df)
-
 # Applies zeroes as the above add_zero function describes
 def clean_state_geoid(df):
-    df['state'] = df['state'].astype(str)
-    df['state'] = df['state'].apply(lambda x: add_zero(x, 'state'))
-    df['county'] = df['county'].astype(str)
-    df['county'] = df['county'].apply(lambda x: add_zero(x, 'county'))
-    df['tract'] = df['tract'].astype(str)
-    df['tract'] = df['tract'].apply(lambda x: add_zero(x, 'tract'))
-    df = make_geoid(df)
+    df['state'] = df['state'].astype(str).apply(lambda x: x.zfill(2))
+    df['county'] = df['county'].astype(str).apply(lambda x: x.zfill(3))
+    df['tract'] = df['tract'].astype(str).apply(lambda x: x.zfill(6))
+    df['GEOID'] = df['state'] + df['county'] + df['tract']
     return(df)
+    # use zfill()
 
 
 
@@ -274,8 +226,6 @@ race_nums = ['001', '003', '004', '005', '006', '007', '008', '009', '012']
 
 
 lep_vars = get_var_nums('B16008', lep_nums)
-
-
 
 household_vars = get_var_nums('B11016', household_nums)
 
