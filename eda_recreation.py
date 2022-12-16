@@ -229,135 +229,36 @@ def eda_flag(df, msa_name_col, total_race_col, white_race_col, lep_cols,
             else:
                 msa_df['{}_60'.format(med_inc_vars[i])] = msa_df[med_inc_vars[i]].median() * 0.6
             
-           
-            # Vectorized flag for each variable
-            msa_df['{}_flag'.format(med_inc_vars[i])] = flag_inc_thresh(msa_df[med_inc_vars[i]],
-                                                      msa_df['{}_60'.format(med_inc_vars[i])])
-            # If flag, count, since we're looping through vars we can make it
-            # really easy on ourselves
-            msa_df['{}_count_pop'.format(household_vars[i])] = flag_med_inc_count_pop(
-                msa_df['{}_flag'.format(med_inc_vars[i])], msa_df[household_vars[i]]
-                )
+            msa_df[f'{med_inc_vars[i]}_flag'] = msa_df\
+            .apply(lambda row: 1 if row[f'{med_inc_vars[i]}_60'] <= 0 or row[med_inc_vars[i]] <= row[f'{med_inc_vars[i]}_60']
+                else 0, axis = 1)
+
+            # If flag, count
+            msa_df[f'{household_vars[i]}_count_pop'] = msa_df\
+            .apply(lambda row: round(row[household_vars[i]]) if row[f'{med_inc_vars[i]}_flag'] == 1 else 0, axis = 1)
             
         # Finished with the loop up there, we start to look at the total counts
         # and add them with the final function, here.
         # Starting with varlist creation to draw count names out in the next func.
         count_vars = [house_var + '_count_pop' for house_var in household_vars]
-        msa_df['pop_in_pov'] = sum_count_pop(msa_df, count_vars)
-        msa_df['inc_flag'] = fin_med_inc_check(msa_df['pop_in_pov'], msa_df['tot_families'])
-        
-            
-        msa_df['eda_flag'] = final_eda_flag(msa_df['race_flag'],
-                                            msa_df['lep_flag'],
-                                            msa_df['inc_flag']
-                                            )
+        msa_df['pop_in_pov'] = msa_df[count_vars].sum()
+
+        msa_df['inc_flag'] = msa_df\
+        .apply(lambda row: 1 if (row['pop_in_pov'] >= row['tot_families']*.05) and (row['tot_families'] > 0) else 0, axis = 1)
+
+        msa_df['eda_flag'] = msa_df\
+        .apply(lambda row: 1 if (row['race_flag'] == 1 and row['inc_flag'] == 1)
+            or (row['lep_flag'] == 1 and row['inc_flag'] == 1) else 0, axis = 1)
 
         additive_df = pd.concat([additive_df, msa_df])
     
     return(additive_df)
-    
-
-# The above function relies on these:
-
-# Defines a function that flags if a tract's household size-specific median
-# income is below the 60% threshold for the MSA
-def flag_inc_thresh(df_med_inc_var, thresh_med_inc):
-    res = np.empty(df_med_inc_var.shape)
-    for i in range(len(df_med_inc_var)):
-        # Check if na thresh, 0
-        if thresh_med_inc[i] <= 0:
-            res[i] = 1
-        # Flag median income below thresh, even if missing (-6666666)
-        if df_med_inc_var[i] <= thresh_med_inc[i]:
-            res[i] = 1
-        else:
-            res[i] = 0
-    
-    return res
-
-# Defines a function that chops population in half to get the population under
-# the median income
-def flag_med_inc_count_pop(df_flag_var, df_pop_var):
-    res = np.empty(df_flag_var.shape)
-    for i in range(len(df_flag_var)):
-        # If flagged, return half the pop var
-        if df_flag_var[i] == 1:
-            res[i] = round(df_pop_var[i]/2)
-        else:
-            res[i] = 0
-    return(res)
-
-# Defines a function that sums the total population living in flagged
-# tracts
-def sum_count_pop(df, count_vars):
-    # initialize an empty column from the first count vars
-    res = np.empty(df[count_vars[0]].shape)
-    
-    # Initialize a loop over any of the columns, using 0 as default but
-    # all are the same length. Loops over rows
-    for i in range(len(df[count_vars[0]])):
-        # Initialize a var
-        count_tot = 0
-        # Create a second loop to go through each row's relevant columns
-        # adding count totals
-        for var in count_vars:
-            count_tot += df[var][i]
-        
-        # Finish with a response/filler variable for the new column
-        res[i] = count_tot
-        
-    return(res)
-
-# Defines a final function that takes the above sum_count_pop 
-# and checks the count against an MSA's population, flagging if pop
-# under median income thresh > 5%
-def fin_med_inc_check(df_count_var, df_families_var):
-    res = np.empty(df_count_var.shape)
-    
-    for i in range(len(df_count_var)):
-        # Initialize a 5% threshold to check against, if count_var > 5%, flag
-        five_thresh = df_families_var[i] * 0.05
-        
-        # Check count under 60% median threshold >= 5% thresh, tag
-        # Filter out five_thresh == 0 since 5% of 0 is 0
-        if (df_count_var[i] >= five_thresh) & (five_thresh > 0):
-            res[i] = 1
-        else:
-            res[i] = 0
-    return(res)
-
-
-# Defines a function that, finally, flags an EDA +++++
-# If the low-income flag was present AND
-# people of color OR limited English proficiency flag was present.
-
-def final_eda_flag(df_race_flag, df_lep_flag, df_inc_flag):
-    res = np.empty(df_race_flag.shape)
-    
-    for i in range(len(df_race_flag)):
-        
-        if (df_inc_flag[i] == 1) & (df_race_flag[i] == 1):
-            res[i] = 1
-        elif (df_inc_flag[i] == 1) & (df_lep_flag[i] == 1):
-            res[i] = 1
-        else:
-            res[i] = 0
-    
-    return(res)
-
-
-
-
-
 
 ######### BEGIN CODE RUN #############
 
 # Loading in ACS5-table, you read through this if you're looking for new vars, 
 # not relevant for this but could be useful in the future :)
 acs5_tab = pd.DataFrame(c.acs5.tables())
-
-
-
 
 # Establishing important var lists. NOTE: these are the variables used to 
 # create EDAs. In this case, I use the ACS5-Year Estimates to recreate single-family
