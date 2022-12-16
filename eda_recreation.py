@@ -182,7 +182,7 @@ def eda_flag(df, msa_name_col, total_race_col, white_race_col, lep_cols,
         df['half_{}'.format(var)] = round(df[var]/2)
                 
     
-    # Establishes an emtpy df with column names from the base df
+    # Establishes an empty df with column names from the base df
     additive_df = pd.DataFrame(columns = wdf.columns)
     
     # Basically, everything that needs to happen happens in this loop
@@ -195,9 +195,10 @@ def eda_flag(df, msa_name_col, total_race_col, white_race_col, lep_cols,
         
         
         # Flag race
-        msa_df['race_flag'] = flag_race_lep(msa_df['perc_poc'], tot_poc_avg)
+        mas_df['race_flag'] = msa_df['perc_poc'].apply(lambda x: 1 if x >= tot_poc_avg else 0)
         # Flag lep
-        msa_df['lep_flag'] = flag_race_lep(msa_df['perc_lep'], tot_lep_avg)
+        mas_df['lep_flag'] = msa_df['perc_lep'].apply(lambda x: 1 if x >= tot_lep_avg else 0)
+
         
         # Flag med_inc
         
@@ -257,20 +258,6 @@ def eda_flag(df, msa_name_col, total_race_col, white_race_col, lep_cols,
     
 
 # The above function relies on these:
-
-# Defines a function that loops through each row and creates a new column flagging
-# as needed (for race and LEP since these are simpler to address)
-def flag_race_lep(df_perc_var, tot_var):
-    # Define an empty col to push flags into
-    res = np.empty(df_perc_var.astype(str).shape)
-    for i in range(len(df_perc_var)):
-        
-        # Define a dummy 1 // 0 based on flagging
-        if df_perc_var[i] >= tot_var:
-            res[i] = 1
-        else:
-            res[i] = 0
-    return res
 
 # Defines a function that flags if a tract's household size-specific median
 # income is below the 60% threshold for the MSA
