@@ -1,5 +1,5 @@
 '''
-Welcome to the script! Following imports, I have a sereis of complementary
+Welcome to the script! Following imports, I have a series of complementary
 functions that help build out the tools we need before beginning with the
 actual recreation of EDAs. I define each function and lead readers and,
 hopefully, users to better use and manipulate the code in the future.
