@@ -22,7 +22,7 @@ from us import states
 
 # Enter your own census api key. Don't have one? Get it here:
 # https://api.census.gov/data/key_signup.html
-CENSUS_KEY = r'e6a46fdf52e4035553df66415ff958e025dcd5e6'
+CENSUS_KEY = r'CENSUS KEY'
 
 WD = '/Users/jakelang/Documents/Harris - MPP - 2021-2022/Winter 2022/Policy Lab 22/CMAP EDA Recreation'
 
